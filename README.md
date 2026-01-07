@@ -18,6 +18,13 @@ En su lugar, este plugin redirige a los clientes a las páginas correspondientes
 - ✅ Compatible con Store API de WooCommerce (usado por frontends headless)
 - ✅ Compatible con gateways de pago externos (Mercado Pago, PayPal, etc.)
 - ✅ Panel de configuración en WordPress admin
+- ✅ **API REST para gestión de clientes y pedidos**
+  - Perfil de cliente (obtener/modificar)
+  - Direcciones de facturación y envío (obtener/modificar)
+  - Listado de pedidos del cliente
+  - Detalle de pedidos con enlaces de acción
+  - Cancelar pedidos
+  - Volver a pedir
 - ✅ Logging para debugging
 - ✅ No modifica el comportamiento de WooCommerce, solo las URLs
 
@@ -90,6 +97,43 @@ El plugin redirigirá a las siguientes rutas en tu frontend. Asegúrate de que e
 - **Parámetros:** `?order_id={ID}` (opcional)
 - **Propósito:** Mostrar mensaje cuando el cliente cancela el pago
 
+## 🔌 API REST
+
+El plugin proporciona endpoints REST API completos para gestionar perfiles, direcciones y pedidos desde el frontend.
+
+### Base URL
+```
+/wp-json/casa-alba/v1/
+```
+
+### Endpoints Disponibles
+
+**Perfil de Cliente:**
+- `GET /customer/profile` - Obtener perfil del usuario
+- `PUT /customer/profile` - Actualizar perfil del usuario
+
+**Direcciones:**
+- `GET /customer/addresses` - Obtener direcciones de facturación y envío
+- `PUT /customer/addresses` - Actualizar direcciones
+
+**Pedidos:**
+- `GET /customer/orders` - Listar todos los pedidos del usuario
+- `GET /customer/orders/{id}` - Obtener detalle de un pedido específico
+- `POST /customer/orders/{id}/cancel` - Cancelar un pedido
+- `POST /customer/orders/{id}/reorder` - Volver a pedir (agregar al carrito)
+
+### Autenticación
+
+Todos los endpoints requieren autenticación JWT. Incluye el token en el header:
+```
+Authorization: Bearer {token}
+```
+
+### Documentación Completa
+
+Para documentación detallada de la API, incluyendo ejemplos de uso, ver:
+- 📚 **[API.md](./API.md)** - Documentación completa de endpoints
+
 ## 🛠️ Hooks y Filtros Modificados
 
 El plugin intercepta los siguientes filtros de WooCommerce:
@@ -154,6 +198,14 @@ Para reportar problemas o solicitar nuevas funcionalidades, contacta al equipo d
 ## 🔄 Changelog
 
 ### 1.0.0 (2025-01-28)
+- Inicial release
+- Modificación de URLs de checkout para frontend headless
+- API REST para gestión de clientes y pedidos
+  - Endpoints de perfil de cliente
+  - Endpoints de direcciones
+  - Endpoints de pedidos
+  - Cancelación y reordenamiento de pedidos
+- Documentación completa de API en `API.md`
 - Lanzamiento inicial
 - Soporte para URLs de confirmación y cancelación
 - Compatibilidad con Store API

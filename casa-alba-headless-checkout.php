@@ -24,6 +24,10 @@ define('CASA_ALBA_HEADLESS_VERSION', '1.0.0');
 define('CASA_ALBA_HEADLESS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CASA_ALBA_HEADLESS_PLUGIN_URL', plugin_dir_url(__FILE__));
 
+// Include API classes
+require_once CASA_ALBA_HEADLESS_PLUGIN_DIR . 'includes/class-customer-api.php';
+require_once CASA_ALBA_HEADLESS_PLUGIN_DIR . 'includes/class-orders-api.php';
+
 /**
  * Class Casa_Alba_Headless_Checkout
  * 
@@ -41,6 +45,16 @@ class Casa_Alba_Headless_Checkout {
      */
     private $frontend_url;
     
+    /**
+     * Customer API instance
+     */
+    private $customer_api;
+
+    /**
+     * Orders API instance
+     */
+    private $orders_api;
+
     /**
      * Get singleton instance
      */
@@ -60,10 +74,15 @@ class Casa_Alba_Headless_Checkout {
             ? CASA_ALBA_FRONTEND_URL 
             : get_option('casa_alba_frontend_url', 'https://productoscasaalba.cl');
         
+        // Initialize API classes
+        $this->customer_api = new Casa_Alba_Customer_API();
+        $this->orders_api = new Casa_Alba_Orders_API();
+
         // Initialize hooks
         add_action('init', array($this, 'init'));
         add_action('admin_menu', array($this, 'add_admin_menu'));
         add_action('admin_init', array($this, 'register_settings'));
+        add_action('rest_api_init', array($this, 'register_rest_routes'));
     }
     
     /**
@@ -96,6 +115,14 @@ class Casa_Alba_Headless_Checkout {
         error_log('Casa Alba Headless Checkout: Plugin initialized with frontend URL: ' . $this->frontend_url);
     }
     
+    /**
+     * Register REST API routes
+     */
+    public function register_rest_routes() {
+        $this->customer_api->register_routes();
+        $this->orders_api->register_routes();
+    }
+
     /**
      * Modify order received URL (thank you page)
      */
