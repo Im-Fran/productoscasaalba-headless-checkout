@@ -3,7 +3,7 @@
  * Plugin Name: Casa Alba - Headless Checkout URLs
  * Plugin URI: https://productoscasaalba.cl
  * Description: Modifica las URLs de retorno del checkout de WooCommerce para redirigir al frontend headless en lugar del CMS.
- * Version: 1.0.1
+ * Version: 1.1.0
  * Author: Casa Alba
  * Author URI: https://productoscasaalba.cl
  * License: GPL v3
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define constants
-define('CASA_ALBA_HEADLESS_VERSION', '1.0.1');
+define('CASA_ALBA_HEADLESS_VERSION', '1.1.0');
 define('CASA_ALBA_HEADLESS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CASA_ALBA_HEADLESS_PLUGIN_URL', plugin_dir_url(__FILE__));
 

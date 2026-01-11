@@ -310,6 +310,71 @@ Obtiene el detalle completo de un pedido específico.
 **Códigos de error:**
 - `404`: Pedido no encontrado o no pertenece al usuario autenticado
 
+### Obtener Detalle de Pedido (Público con Order Key)
+
+**GET** `/orders/{id}/public`
+
+Obtiene el detalle completo de un pedido específico usando el order key. No requiere autenticación.
+
+**Query Parameters:**
+- `key` (requerido): Order key del pedido (ej: wc_order_abc123)
+
+**Ejemplo:**
+```
+GET /wp-json/casa-alba/v1/orders/456/public?key=wc_order_abc123
+```
+
+**Response:**
+```json
+{
+  "id": 456,
+  "order_number": "456",
+  "order_key": "wc_order_abc123",
+  "date_created": "2024-01-20 15:30:00",
+  "date_created_gmt": "2024-01-20T15:30:00+00:00",
+  "date_modified": "2024-01-20 16:00:00",
+  "status": "pending",
+  "status_label": "Pendiente de pago",
+  "currency": "CLP",
+  "total": 75000,
+  "total_formatted": "$75.000",
+  "subtotal": 70000,
+  "subtotal_formatted": "$70.000",
+  "total_tax": 0,
+  "total_tax_formatted": "$0",
+  "shipping_total": 5000,
+  "shipping_total_formatted": "$5.000",
+  "discount_total": 0,
+  "discount_total_formatted": "$0",
+  "payment_method": "webpay",
+  "payment_method_title": "Webpay Plus",
+  "customer_note": "",
+  "billing": { ... },
+  "shipping": { ... },
+  "line_items": [ ... ],
+  "shipping_lines": [ ... ],
+  "links": {
+    "pay": {
+      "url": "https://ejemplo.com/checkout/order-pay/456/?key=wc_order_abc123",
+      "label": "Pagar pedido"
+    }
+  }
+}
+```
+
+**Uso típico:**
+Este endpoint se utiliza principalmente en la página de "Pedido Recibido" para mostrar los detalles del pedido inmediatamente después del checkout, sin requerir que el usuario inicie sesión.
+
+**Notas:**
+- No requiere autenticación JWT
+- El order_key debe coincidir exactamente con el pedido solicitado
+- Solo muestra el enlace de "pagar" en los links (no muestra cancelar ni reordenar)
+- Este endpoint es seguro porque el order_key es un token único generado por WooCommerce
+
+**Códigos de error:**
+- `400`: Falta el parámetro 'key'
+- `404`: Pedido no encontrado o order key inválido
+
 ### Cancelar Pedido
 
 **POST** `/customer/orders/{id}/cancel`

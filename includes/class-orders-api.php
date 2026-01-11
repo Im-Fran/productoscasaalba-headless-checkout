@@ -22,11 +22,25 @@ class Casa_Alba_Orders_API {
             'permission_callback' => array($this, 'check_authentication')
         ));
 
-        // Get single order detail
+        // Get single order detail (authenticated)
         register_rest_route('casa-alba/v1', '/customer/orders/(?P<id>\d+)', array(
             'methods' => 'GET',
             'callback' => array($this, 'get_order'),
             'permission_callback' => array($this, 'check_authentication')
+        ));
+
+        // Get order detail by order key (public - for order received page)
+        register_rest_route('casa-alba/v1', '/orders/(?P<id>\d+)/public', array(
+            'methods' => 'GET',
+            'callback' => array($this, 'get_order_by_key'),
+            'permission_callback' => '__return_true',
+            'args' => array(
+                'key' => array(
+                    'required' => true,
+                    'type' => 'string',
+                    'description' => 'Order key for verification'
+                )
+            )
         ));
 
         // Cancel order
@@ -218,6 +232,137 @@ class Casa_Alba_Orders_API {
         }
 
         // Build order detail response
+        $order_data = array(
+            'id' => $order->get_id(),
+            'order_number' => $order->get_order_number(),
+            'order_key' => $order->get_order_key(),
+            'date_created' => $order->get_date_created()->date('Y-m-d H:i:s'),
+            'date_created_gmt' => $order->get_date_created()->date('c'),
+            'date_modified' => $order->get_date_modified() ? $order->get_date_modified()->date('Y-m-d H:i:s') : null,
+            'status' => $order->get_status(),
+            'status_label' => wc_get_order_status_name($order->get_status()),
+            'currency' => $order->get_currency(),
+            'total' => $order->get_total(),
+            'total_formatted' => wc_price($order->get_total()),
+            'subtotal' => $order->get_subtotal(),
+            'subtotal_formatted' => wc_price($order->get_subtotal()),
+            'total_tax' => $order->get_total_tax(),
+            'total_tax_formatted' => wc_price($order->get_total_tax()),
+            'shipping_total' => $order->get_shipping_total(),
+            'shipping_total_formatted' => wc_price($order->get_shipping_total()),
+            'discount_total' => $order->get_discount_total(),
+            'discount_total_formatted' => wc_price($order->get_discount_total()),
+            'payment_method' => $order->get_payment_method(),
+            'payment_method_title' => $order->get_payment_method_title(),
+            'customer_note' => $order->get_customer_note(),
+            'billing' => array(
+                'first_name' => $order->get_billing_first_name(),
+                'last_name' => $order->get_billing_last_name(),
+                'company' => $order->get_billing_company(),
+                'address_1' => $order->get_billing_address_1(),
+                'address_2' => $order->get_billing_address_2(),
+                'city' => $order->get_billing_city(),
+                'state' => $order->get_billing_state(),
+                'postcode' => $order->get_billing_postcode(),
+                'country' => $order->get_billing_country(),
+                'email' => $order->get_billing_email(),
+                'phone' => $order->get_billing_phone(),
+            ),
+            'shipping' => array(
+                'first_name' => $order->get_shipping_first_name(),
+                'last_name' => $order->get_shipping_last_name(),
+                'company' => $order->get_shipping_company(),
+                'address_1' => $order->get_shipping_address_1(),
+                'address_2' => $order->get_shipping_address_2(),
+                'city' => $order->get_shipping_city(),
+                'state' => $order->get_shipping_state(),
+                'postcode' => $order->get_shipping_postcode(),
+                'country' => $order->get_shipping_country(),
+            ),
+            'line_items' => $items,
+            'shipping_lines' => $shipping,
+            'links' => $links,
+        );
+
+        return rest_ensure_response($order_data);
+    }
+
+    /**
+     * Get order detail by order key (public endpoint for order received page)
+     */
+    public function get_order_by_key($request) {
+        $order_id = $request->get_param('id');
+        $order_key = $request->get_param('key');
+
+        if (!$order_key) {
+            return new WP_Error(
+                'missing_order_key',
+                __('Se requiere la clave del pedido', 'casa-alba-headless'),
+                array('status' => 400)
+            );
+        }
+
+        $order = wc_get_order($order_id);
+
+        // Verify order exists and order key matches
+        if (!$order || $order->get_order_key() !== $order_key) {
+            return new WP_Error(
+                'invalid_order_key',
+                __('Pedido no encontrado o clave inválida', 'casa-alba-headless'),
+                array('status' => 404)
+            );
+        }
+
+        // Get order items
+        $items = array();
+        foreach ($order->get_items() as $item_id => $item) {
+            $product = $item->get_product();
+
+            $items[] = array(
+                'id' => $item_id,
+                'product_id' => $item->get_product_id(),
+                'variation_id' => $item->get_variation_id(),
+                'name' => $item->get_name(),
+                'quantity' => $item->get_quantity(),
+                'subtotal' => $item->get_subtotal(),
+                'subtotal_formatted' => wc_price($item->get_subtotal()),
+                'total' => $item->get_total(),
+                'total_formatted' => wc_price($item->get_total()),
+                'sku' => $product ? $product->get_sku() : '',
+                'image' => $product && $product->get_image_id() ? wp_get_attachment_url($product->get_image_id()) : '',
+            );
+        }
+
+        // Get shipping lines
+        $shipping = array();
+        foreach ($order->get_shipping_methods() as $shipping_id => $shipping_item) {
+            $shipping[] = array(
+                'id' => $shipping_id,
+                'method_title' => $shipping_item->get_method_title(),
+                'method_id' => $shipping_item->get_method_id(),
+                'total' => $shipping_item->get_total(),
+                'total_formatted' => wc_price($shipping_item->get_total()),
+            );
+        }
+
+        // Get frontend URL
+        $frontend_url = defined('CASA_ALBA_FRONTEND_URL')
+            ? CASA_ALBA_FRONTEND_URL
+            : get_option('casa_alba_frontend_url', 'https://productoscasaalba.cl');
+
+        // Build action links (limited for public view)
+        $links = array();
+        $order_status = $order->get_status();
+
+        // Payment link (if pending payment)
+        if (in_array($order_status, array('pending', 'on-hold')) && $order->needs_payment()) {
+            $links['pay'] = array(
+                'url' => $order->get_checkout_payment_url(),
+                'label' => __('Pagar pedido', 'casa-alba-headless'),
+            );
+        }
+
+        // Build order detail response (same format as authenticated endpoint)
         $order_data = array(
             'id' => $order->get_id(),
             'order_number' => $order->get_order_number(),
